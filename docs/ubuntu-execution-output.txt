@@ -1,0 +1,107 @@
+Spark Join Strategies Project
+Spark version: 4.2.0
+spark.sql.autoBroadcastJoinThreshold: -1
+
+================================================================================
+1. BROADCAST HASH JOIN
+================================================================================
+Small lookup table:
++-----------+--------------+
+|CountryCode|   CountryName|
++-----------+--------------+
+|         US| United States|
+|         IN|         India|
+|         UK|United Kingdom|
++-----------+--------------+
+
+Large dataset:
++-----+-----------+
+| Name|CountryCode|
++-----+-----------+
+|Alice|         US|
+|  Bob|         IN|
+|Cathy|         UK|
+|David|         US|
++-----+-----------+
+
+Broadcast Hash Join result:
++-----------+-----+--------------+
+|CountryCode| Name|   CountryName|
++-----------+-----+--------------+
+|         US|Alice| United States|
+|         IN|  Bob|         India|
+|         UK|Cathy|United Kingdom|
+|         US|David| United States|
++-----------+-----+--------------+
+
+Physical plan:
+BroadcastHashJoin
+
+================================================================================
+2. SHUFFLE HASH JOIN
+================================================================================
+Shuffle Hash Join result:
++-----------+-----+--------------+
+|CountryCode| Name|   CountryName|
++-----------+-----+--------------+
+|         US|Alice| United States|
+|         IN|  Bob|         India|
+|         UK|Cathy|United Kingdom|
++-----------+-----+--------------+
+
+Physical plan:
+ShuffledHashJoin
+
+================================================================================
+3. SHUFFLE SORT MERGE JOIN
+================================================================================
+Shuffle Sort Merge Join result:
++-----------+-----+--------------+
+|CountryCode| Name|   CountryName|
++-----------+-----+--------------+
+|         IN|  Bob|         India|
+|         UK|Cathy|United Kingdom|
+|         US|Alice| United States|
++-----------+-----+--------------+
+
+Physical plan:
+SortMergeJoin
+
+================================================================================
+4. BROADCAST NESTED LOOP JOIN
+================================================================================
+Broadcast Nested Loop Join / Cross Join result:
++-----+-----------+-----------+-------------+
+| Name|CountryCode|CountryCode|  CountryName|
++-----+-----------+-----------+-------------+
+|Alice|         US|         US|United States|
+|Alice|         US|         IN|        India|
+|  Bob|         IN|         US|United States|
+|  Bob|         IN|         IN|        India|
++-----+-----------+-----------+-------------+
+
+Physical plan:
+CartesianProduct
+
+================================================================================
+5. JOIN OPTIMIZATION TECHNIQUES
+================================================================================
+A. Broadcast small tables
+   Use broadcast() for small lookup or dimension tables.
+B. Repartition data
+   Repartition large datasets by the join key to reduce shuffle overhead.
+   Example: df.repartition("CountryCode")
+C. Sort and bucket data
+   Pre-sort and bucket data on frequently used join keys.
+D. Filter early
+   Apply filters before the join to reduce dataset size.
+
+Practical optimized join example:
++-----------+---+-----+------+--------------+
+|CountryCode| id| Name|status|   CountryName|
++-----------+---+-----+------+--------------+
+|         US|  1|Alice|active| United States|
+|         UK|  3|Cathy|active|United Kingdom|
++-----------+---+-----+------+--------------+
+
+Project completed successfully.
