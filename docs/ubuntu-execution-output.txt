@@ -1,4 +1,12 @@
-Spark Join Strategies Project
+WARNING: Using incubator modules: jdk.incubator.vector
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+26/09/02 11:00:07 WARN Utils: Your hostname, vishnupriya, resolves to a loopback address: 127.0.1.1; using 10.255.255.254 instead (on interface lo)
+26/09/02 11:00:07 WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+Using Spark's default log4j profile: org/apache/spark/log4j2-defaults.properties
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+26/09/02 11:00:08 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+[Stage 0:>                                                          (0 + 1) / 1]                                                                                [Stage 23:=====================>                                (40 + 15) / 100][Stage 23:================================>                     (60 + 12) / 100][Stage 23:=======================================>              (74 + 12) / 100][Stage 23:===================================================>   (93 + 7) / 100]                                                                                Spark Join Strategies Project
 Spark version: 4.2.0
 spark.sql.autoBroadcastJoinThreshold: -1
 
@@ -35,7 +43,17 @@ Broadcast Hash Join result:
 +-----------+-----+--------------+
 
 Physical plan:
-BroadcastHashJoin
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Project [CountryCode#3, Name#2, CountryName#1]
+   +- BroadcastHashJoin [CountryCode#3], [CountryCode#0], Inner, BuildRight, false, false
+      :- Filter isnotnull(CountryCode#3)
+      :  +- Scan ExistingRDD[Name#2,CountryCode#3]
+      +- BroadcastExchange HashedRelationBroadcastMode(List(input[0, string, false]),false), [plan_id=113]
+         +- Filter isnotnull(CountryCode#0)
+            +- Scan ExistingRDD[CountryCode#0,CountryName#1]
+
+
 
 ================================================================================
 2. SHUFFLE HASH JOIN
@@ -50,7 +68,18 @@ Shuffle Hash Join result:
 +-----------+-----+--------------+
 
 Physical plan:
-ShuffledHashJoin
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Project [CountryCode#29, Name#28, CountryName#31]
+   +- ShuffledHashJoin [CountryCode#29], [CountryCode#30], Inner, BuildRight
+      :- Exchange hashpartitioning(CountryCode#29, 200), ENSURE_REQUIREMENTS, [plan_id=233]
+      :  +- Filter isnotnull(CountryCode#29)
+      :     +- Scan ExistingRDD[Name#28,CountryCode#29]
+      +- Exchange hashpartitioning(CountryCode#30, 200), ENSURE_REQUIREMENTS, [plan_id=234]
+         +- Filter isnotnull(CountryCode#30)
+            +- Scan ExistingRDD[CountryCode#30,CountryName#31]
+
+
 
 ================================================================================
 3. SHUFFLE SORT MERGE JOIN
@@ -65,7 +94,20 @@ Shuffle Sort Merge Join result:
 +-----------+-----+--------------+
 
 Physical plan:
-SortMergeJoin
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Project [CountryCode#43, Name#42, CountryName#45]
+   +- SortMergeJoin [CountryCode#43], [CountryCode#44], Inner
+      :- Sort [CountryCode#43 ASC NULLS FIRST], false, 0
+      :  +- Exchange hashpartitioning(CountryCode#43, 200), REPARTITION_BY_COL, [plan_id=381]
+      :     +- Filter isnotnull(CountryCode#43)
+      :        +- Scan ExistingRDD[Name#42,CountryCode#43]
+      +- Sort [CountryCode#44 ASC NULLS FIRST], false, 0
+         +- Exchange hashpartitioning(CountryCode#44, 200), REPARTITION_BY_COL, [plan_id=384]
+            +- Filter isnotnull(CountryCode#44)
+               +- Scan ExistingRDD[CountryCode#44,CountryName#45]
+
+
 
 ================================================================================
 4. BROADCAST NESTED LOOP JOIN
@@ -81,7 +123,12 @@ Broadcast Nested Loop Join / Cross Join result:
 +-----+-----------+-----------+-------------+
 
 Physical plan:
+== Physical Plan ==
 CartesianProduct
+:- *(1) Scan ExistingRDD[Name#56,CountryCode#57]
++- *(2) Scan ExistingRDD[CountryCode#58,CountryName#59]
+
+
 
 ================================================================================
 5. JOIN OPTIMIZATION TECHNIQUES
@@ -95,7 +142,6 @@ C. Sort and bucket data
    Pre-sort and bucket data on frequently used join keys.
 D. Filter early
    Apply filters before the join to reduce dataset size.
-
 Practical optimized join example:
 +-----------+---+-----+------+--------------+
 |CountryCode| id| Name|status|   CountryName|
@@ -103,5 +149,6 @@ Practical optimized join example:
 |         US|  1|Alice|active| United States|
 |         UK|  3|Cathy|active|United Kingdom|
 +-----------+---+-----+------+--------------+
+
 
 Project completed successfully.
